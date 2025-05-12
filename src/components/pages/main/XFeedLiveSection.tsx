@@ -127,7 +127,7 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
     const fetchBtcData = async () => {
       try {
         const response = await axios.get<LunarCrushResponse>(
-          "https://192.168.0.159/api/btc-data"
+          "https://bit-cathash-backend.vercel.app/api/btc-data"
         );
         setBtcData(response.data.data || []);
         setLoading(false);

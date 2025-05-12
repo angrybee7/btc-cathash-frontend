@@ -64,7 +64,7 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
     setError(null);
     for (let i = 0; i < retries; i++) {
       try {
-        const response = await axios.get<ApiResponse>('https://192.168.0.159/api/social-data', {
+        const response = await axios.get<ApiResponse>('https://bit-cathash-backend.vercel.app/api/social-data', {
           params: { interval: selectedInterval },
         });
 
@@ -100,7 +100,7 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
         }
         const errorMessage =
           err.response?.status === 404
-            ? 'API endpoint not found. Check if the backend server is running on https://192.168.0.159.'
+            ? 'API endpoint not found. Check if the backend server is running on https://bit-cathash-backend.vercel.app.'
             : err.response?.data?.error || err.message || 'Failed to load data. Please try again later.';
         setError(errorMessage);
         console.error('Fetch Error:', err.response?.data || err.message);
