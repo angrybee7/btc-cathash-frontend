@@ -17,7 +17,6 @@ import {
 import 'chartjs-adapter-date-fns';
 import { enUS } from 'date-fns/locale';
 
-// Register Chart.js components
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -32,6 +31,7 @@ ChartJS.register(
 interface DataPoint {
   time: number; // Unix timestamp (seconds)
   mentions: number; // Count of X mentions
+  delta: number; // Change from previous point (unused for coloring)
 }
 
 interface ApiResponse {
@@ -49,23 +49,13 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Map parent interval to backend interval
-  const getBackendInterval = (interval: '1h' | '7h' | '24h') => {
-    switch (interval) {
-      case '1h':
-        return '2h'; // Backend uses '2h' for 1-hour data
-      default:
-        return interval;
-    }
-  };
-
-  const fetchData = async (selectedInterval: string, retries = 3) => {
+  const fetchData = async (retries = 3) => {
     setLoading(true);
     setError(null);
     for (let i = 0; i < retries; i++) {
       try {
-        const response = await axios.get<ApiResponse>('https://bit-cathash-backend.vercel.app/api/social-data', {
-          params: { interval: selectedInterval },
+        const response = await axios.get<ApiResponse>('http://localhost:5000/api/social-data', {
+          params: { interval },
         });
 
         console.log('Raw API Response:', response.data);
@@ -87,20 +77,38 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
           throw new Error('No valid mention data available after filtering.');
         }
 
-        console.log('Filtered Data:', filteredData);
+        // Fill gaps in hourly data
+        const filledData: DataPoint[] = [];
+        const hourInSeconds = 3600;
+        const startTime = filteredData[0].time;
+        const endTime = filteredData[filteredData.length - 1].time;
+        for (let t = startTime; t <= endTime; t += hourInSeconds) {
+          const existingPoint = filteredData.find((p) => p.time === t);
+          if (existingPoint) {
+            filledData.push(existingPoint);
+          } else {
+            filledData.push({
+              time: t,
+              mentions: 0, // Fill missing hours with 0 mentions
+              delta: 0,
+            });
+          }
+        }
+
+        console.log('Filled Data:', filledData);
         console.log('Trend:', response.data.trend);
-        setData(filteredData);
+        setData(filledData);
         setTrend(response.data.trend);
         return;
       } catch (err: any) {
-        if (err.response?.status === 404 && i < retries - 1) {
-          console.warn(`Retry ${i + 1}/${retries} for 404 error`);
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (err.response?.status === 429 && i < retries - 1) {
+          console.warn(`Retry ${i + 1}/${retries} for rate limit error`);
+          await new Promise((resolve) => setTimeout(resolve, 2000));
           continue;
         }
         const errorMessage =
           err.response?.status === 404
-            ? 'API endpoint not found. Check if the backend server is running on https://bit-cathash-backend.vercel.app.'
+            ? 'API endpoint not found. Check if the backend server is running on http://localhost:5000.'
             : err.response?.data?.error || err.message || 'Failed to load data. Please try again later.';
         setError(errorMessage);
         console.error('Fetch Error:', err.response?.data || err.message);
@@ -111,20 +119,16 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
   };
 
   useEffect(() => {
-    fetchData(getBackendInterval(interval));
+    fetchData();
     const refreshInterval = window.setInterval(() => {
       console.log(`Auto-refreshing data for interval: ${interval}`);
-      fetchData(getBackendInterval(interval));
+      fetchData();
     }, 60 * 1000);
     return () => {
       console.log('Clearing refresh interval');
       window.clearInterval(refreshInterval);
     };
   }, [interval]);
-
-  const getIntervalLabel = (interval: '1h' | '7h' | '24h') => {
-    return interval;
-  };
 
   const chartData: ChartData<'line'> = {
     datasets: [
@@ -136,10 +140,10 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
         })),
         borderWidth: 2,
         fill: false,
-        borderColor: trend === 'bullish' ? 'green' : 'red',
+        borderColor: trend === 'bullish' ? 'green' : 'red', // Entire line color based on trend
         pointRadius: 0,
-        pointHoverRadius: 0,
-        tension: 0.4, // Smooth line
+        pointHoverRadius: 5,
+        tension: 0.2,
       },
     ],
   };
@@ -156,7 +160,7 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
           font: { size: 14 },
           generateLabels: () => [
             {
-              text: `Trend: ${trend}`,
+              text: `Trend: ${trend} (Bullish > 0%, Bearish ≤ 0%)`,
               fillStyle: trend === 'bullish' ? 'green' : 'red',
               strokeStyle: trend === 'bullish' ? 'green' : 'red',
               lineWidth: 2,
@@ -166,7 +170,7 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
       },
       title: {
         display: true,
-        text: `Bitcoin ($BTC, #BTC) X Mentions (${getIntervalLabel(interval)})`,
+        text: `Bitcoin ($BTC, #BTC) X Mentions (${interval.toUpperCase()})`,
         font: { size: 18, weight: 'bold' },
         color: '#333',
       },
@@ -192,13 +196,13 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
       x: {
         type: 'time',
         time: {
-          unit: interval === '1h' ? 'minute' : 'hour',
+          unit: interval === '1h' ? 'minute' : 'hour', // Use minutes for 1h, hours for 7h/24h
           displayFormats: {
             minute: 'HH:mm',
-            hour: interval === '24h' ? ' HH:mm' : 'HH:mm',
+            hour: interval === '24h' ? 'MMM d HH:mm' : 'HH:mm',
           },
-          tooltipFormat: ' HH:mm:ss',
-          // stepSize: interval === '1h' ? 5 : interval === '7h' ? 30 : 60, // Match backend buckets
+          tooltipFormat: 'MMM d, HH:mm:ss',
+          // stepSize: interval === '1h' ? 15 : interval === '7h' ? 1 : 2, // Tighter ticks: 15min for 1h, 1h for 7h, 2h for 24h
         },
         adapters: {
           date: { locale: enUS },
@@ -215,7 +219,7 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
           font: { size: 12 },
           maxRotation: 45,
           minRotation: 45,
-          maxTicksLimit: 10, // Less dense ticks
+          maxTicksLimit: interval === '1h' ? 8 : interval === '7h' ? 8 : 12, // More ticks for denser appearance
         },
       },
       y: {
@@ -231,7 +235,7 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
         min: 0,
         suggestedMax:
           data.length > 0
-            ? Math.max(...data.map((d) => d.mentions)) + 10
+            ? Math.max(...data.map((d) => d.mentions)) * 1.1
             : 100,
         grid: {
           color: 'rgba(0, 0, 0, 0.1)',
