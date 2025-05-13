@@ -143,7 +143,7 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
         borderColor: trend === 'bullish' ? 'green' : 'red', // Entire line color based on trend
         pointRadius: 0,
         pointHoverRadius: 5,
-        tension: 0.2,
+        tension: 0.5,
       },
     ],
   };

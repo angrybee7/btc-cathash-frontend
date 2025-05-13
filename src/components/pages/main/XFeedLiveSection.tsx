@@ -528,7 +528,7 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
         )}
         {tab === "btcSd" && (
           <div className="flex flex-col items-center w-full justify-center mb-8">
-            <div className="bg-white rounded-2xl shadow p-6 flex flex-col items-center max-w-2xl w-full">
+            <div className="bg-white rounded-2xl shadow py-6 flex flex-col items-center max-w-2xl w-full">
               <div className="flex items-center gap-2 md:gap-4 mb-4">
                 <span className="text-[#26A107] font-medium text-xs md:text-base flex items-center gap-1">
                   <Image
