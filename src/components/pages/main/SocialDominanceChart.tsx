@@ -54,7 +54,7 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
     setError(null);
     for (let i = 0; i < retries; i++) {
       try {
-        const response = await axios.get<ApiResponse>('http://localhost:5000/api/social-data', {
+        const response = await axios.get<ApiResponse>('https://bit-cathash-backend.vercel.app/api/social-data', {
           params: { interval },
         });
 
