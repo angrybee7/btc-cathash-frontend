@@ -6,7 +6,6 @@ import axios from "axios";
 import { LunarCrushPost, LunarCrushResponse } from "@/types/lunarCrush";
 import SocialDominanceChart from "./SocialDominanceChart";
 
-// Define props for the component
 interface XFeedLiveSectionProps {
   speed?: number; // Speed in seconds for marquee animation
 }
@@ -18,73 +17,60 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
   const [isPaused, setIsPaused] = useState(false);
   const [startX, setStartX] = useState(0);
   const [translateX, setTranslateX] = useState(0);
-  const [dragOffset, setDragOffset] = useState(0); // Track the drag offset for the current drag
+  const [dragOffset, setDragOffset] = useState(0);
   const [maxTranslateX, setMaxTranslateX] = useState(0);
   const [hasMoved, setHasMoved] = useState(false);
 
-  // Constants
-  const DRAG_THRESHOLD = 2; // Pixels to move before considering it a drag
+  const DRAG_THRESHOLD = 2;
 
-  // Handle mouse down or touch start
   const handleDragStart = (clientX: number) => {
     setIsDragging(true);
     setIsPaused(false);
     setStartX(clientX);
-    setDragOffset(0); // Reset drag offset at the start of each drag
-    setHasMoved(false); // Reset movement tracking
+    setDragOffset(0);
+    setHasMoved(false);
   };
 
-  // Handle mouse move or touch move
   const handleDragMove = (clientX: number) => {
     if (!isDragging || !marqueeRef.current || !containerRef.current) return;
 
     const deltaX = clientX - startX;
-    setDragOffset(deltaX); // Update drag offset
+    setDragOffset(deltaX);
 
-    // Only start moving if the user has moved beyond the threshold
     if (!hasMoved && Math.abs(deltaX) < DRAG_THRESHOLD) return;
     setHasMoved(true);
 
-    // Calculate new translateX using the current drag offset
+    const containerWidth = containerRef.current.offsetWidth;
+    const marqueeWidth = marqueeRef.current.scrollWidth / 2;
     let newTranslateX = translateX + deltaX;
 
-    // Calculate boundaries
-    const containerWidth = containerRef.current.offsetWidth;
-    const marqueeWidth = marqueeRef.current.scrollWidth / 2; // Divided by 2 because content is duplicated
-    const maxTranslate = 0; // Maximum position (leftmost)
-    const minTranslate = -(marqueeWidth - containerWidth); // Minimum position (rightmost)
+    const maxTranslate = 0;
+    const minTranslate = -(marqueeWidth - containerWidth);
 
-    // Apply boundaries
     if (newTranslateX > maxTranslate) newTranslateX = maxTranslate;
     if (newTranslateX < minTranslate) newTranslateX = minTranslate;
 
     setTranslateX(newTranslateX);
-    setStartX(clientX); // Update startX to the current position to avoid cumulative jitter
+    setStartX(clientX);
   };
 
-  // Handle mouse up or touch end
   const handleDragEnd = () => {
     setIsDragging(false);
     setHasMoved(false);
-    setDragOffset(0); // Reset drag offset
+    setDragOffset(0);
   };
 
-  // Handle click on tweet card to pause marquee
   const handleTweetCardClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (isDragging || hasMoved) return;
     setIsPaused(true);
   };
 
-  // Handle mouse down or touch start on marquee to resume
   const handleMarqueeInteraction = () => {
-    if (isPaused) {
-      setIsPaused(false);
-    }
+    if (isPaused) setIsPaused(false);
   };
 
-  // Mouse event handlers
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault(); // Prevent text selection
+    e.preventDefault();
     handleDragStart(e.clientX);
     handleMarqueeInteraction();
   };
@@ -101,14 +87,13 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
     if (isDragging) handleDragEnd();
   };
 
-  // Touch event handlers
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
     handleDragStart(e.touches[0].clientX);
     handleMarqueeInteraction();
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    e.preventDefault(); // Prevent scrolling while dragging
+    e.preventDefault();
     handleDragMove(e.touches[0].clientX);
   };
 
@@ -121,13 +106,15 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
   const [btcData, setBtcData] = useState<LunarCrushPost[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [category] = useState<string>("bitcoin");
 
   useEffect(() => {
     const fetchBtcData = async () => {
       try {
         const response = await axios.get<LunarCrushResponse>(
-          "https://bit-cathash-backend.vercel.app/api/btc-data"
+          process.env.NODE_ENV === 'production'
+            ? 'https://bit-cathash-backend.vercel.app/api/btc-data'
+            : 'http://localhost:5000/api/btc-data',
+          { timeout: 10000 }
         );
         setBtcData(response.data.data || []);
         setLoading(false);
@@ -142,11 +129,10 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Calculate maximum translateX when btcData changes
   useEffect(() => {
     if (marqueeRef.current && containerRef.current) {
       const containerWidth = containerRef.current.offsetWidth;
-      const marqueeWidth = marqueeRef.current.scrollWidth / 2; // Divided by 2 because content is duplicated
+      const marqueeWidth = marqueeRef.current.scrollWidth / 2;
       setMaxTranslateX(-(marqueeWidth - containerWidth));
     }
   }, [btcData]);
@@ -156,51 +142,47 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
       <div className="w-full max-w-7xl bg-white/80 rounded-3xl shadow-lg p-6 md:p-12 flex flex-col items-center relative mt-0 -mb-8">
         <Image
           src="/images/bg-gradient4.png"
-          alt="Announcement"
+          alt="Gradient"
           width={577}
           height={85}
           className="hidden md:block absolute top-0 left-0 -z-10"
         />
         <Image
           src="/images/bg-gradient5.png"
-          alt="Announcement"
+          alt="Gradient"
           width={577}
           height={100}
           className="hidden md:block absolute bottom-0 right-0 -z-10"
         />
-        {/* Badge */}
         <div className="mb-3 w-full relative flex justify-center">
           <span className="bg-[#FFEFCE] text-orange-500 font-semibold px-5 py-2 rounded-[5px] text-sm">
             X FEED LIVE
           </span>
           <Image
             src="/images/ribbon.png"
-            alt="Announcement"
+            alt="Ribbon"
             width={96}
             height={78}
             className="hidden md:block absolute top-1/2 -translate-y-1/2 left-[100px] md:left-[200px]"
           />
         </div>
-        {/* Headline */}
         <h2 className="text-2xl md:text-[55px] font-extrabold text-center mb-2">
           What's the World
           <br className="hidden md:block" /> Saying About{" "}
           <span className="text-orange-500">$BTC?</span>
         </h2>
-        {/* Subtext */}
         <p className="font-poppins text-center mb-4 md:mb-10 relative w-full">
           What's trending around the first tradeable{" "}
           <span className="text-orange-500 font-semibold">$Cashtag</span> on
           Solana.
           <Image
             src="/images/ribbon.png"
-            alt="Announcement"
+            alt="Ribbon"
             width={96}
             height={78}
             className="hidden md:block absolute top-1/2 -translate-y-1/2 right-[100px] md:right-[200px]"
           />
         </p>
-        {/* Tabs */}
         <div className="flex gap-6 mb-6 border-b border-gray-200 w-full max-w-lg justify-center">
           <button
             onClick={() => setTab("tweets")}
@@ -263,7 +245,6 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
             </div>
           </button>
         </div>
-        {/* Tab Content */}
         {tab === "tweets" && (
           <div className="marquee-wrapper">
             {loading ? (
@@ -298,13 +279,18 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
                       <div className="tweet-header">
                         <Image
                           src={tweet.creator_avatar}
-                          alt="$BTC Logo"
+                          alt="Avatar"
                           width={32}
                           height={32}
                           className="avatar rounded-full"
                         />
                         <div>
-                          <div className="creator-name">{tweet.creator_display_name}</div>
+                          <div className="creator-name">
+                            {tweet.creator_display_name}
+                            {tweet.creator_followers <= 10000 && (
+                              <span className="text-xs text-gray-400 ml-1">(User)</span>
+                            )}
+                          </div>
                           <div className="creator-username">{tweet.creator_name}</div>
                         </div>
                       </div>
@@ -325,7 +311,6 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
                       </div>
                     </div>
                   ))}
-                  {/* Duplicate the content for seamless looping */}
                   {btcData.map((tweet, idx) => (
                     <div
                       key={`duplicate-${idx}`}
@@ -335,13 +320,18 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
                       <div className="tweet-header">
                         <Image
                           src={tweet.creator_avatar}
-                          alt="$BTC Logo"
+                          alt="Avatar"
                           width={32}
                           height={32}
                           className="avatar rounded-full"
                         />
                         <div>
-                          <div className="creator-name">{tweet.creator_display_name}</div>
+                          <div className="creator-name">
+                            {tweet.creator_display_name}
+                            {tweet.creator_followers <= 10000 && (
+                              <span className="text-xs text-gray-400 ml-1">(User)</span>
+                            )}
+                          </div>
                           <div className="creator-username">{tweet.creator_name}</div>
                         </div>
                       </div>
@@ -365,22 +355,18 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
                 </div>
               </div>
             )}
-
-            {/* Scoped CSS for the component */}
             <style jsx>{`
               .marquee-wrapper {
                 width: 100%;
                 overflow: hidden;
                 margin-bottom: 2rem;
               }
-
               .marquee-container {
                 width: 100%;
                 overflow: hidden;
                 white-space: nowrap;
-                touch-action: none; /* Prevent browser scrolling on touch */
+                touch-action: none;
               }
-
               .marquee {
                 display: inline-flex;
                 gap: 2rem;
@@ -390,13 +376,11 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
                     : "none"
                 };
               }
-
               .marquee:hover {
                 animation-play-state: ${
                   isDragging || isPaused ? "running" : "paused"
                 };
               }
-
               @keyframes marquee {
                 0% {
                   transform: translateX(0);
@@ -405,7 +389,6 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
                   transform: translateX(-50%);
                 }
               }
-
               .tweet-card {
                 background-color: #151618;
                 color: white;
@@ -417,57 +400,47 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
-                user-select: none; /* Prevent text selection while dragging */
+                user-select: none;
               }
-
               .tweet-header {
                 display: flex;
                 align-items: center;
                 gap: 0.5rem;
                 margin-bottom: 0.5rem;
               }
-
               .avatar {
                 border-radius: 50%;
               }
-
               .creator-name {
                 font-weight: bold;
                 font-size: 1rem;
               }
-
               .creator-username {
                 font-size: 0.75rem;
                 color: #9ca3af;
               }
-
               .tweet-content {
                 font-size: 0.875rem;
                 margin-top: 1rem;
                 flex: 1;
-                word-wrap: break-word; /* Ensure long text wraps */
+                word-wrap: break-word;
               }
-
               .tweet-title {
                 color: #60a5fa;
               }
-
               .tweet-footer {
                 display: flex;
                 justify-content: space-between;
                 font-size: 0.75rem;
-                color: #9ca3af; /* Fixed invalid color value */
+                color: #9ca3af;
               }
-
               .tweet-link {
                 color: #f59e0b;
                 text-decoration: none;
               }
-
               .tweet-link:hover {
                 text-decoration: underline;
               }
-
               @media (max-width: 768px) {
                 .tweet-card {
                   min-width: 260px;
@@ -528,24 +501,17 @@ const XFeedLiveSection: React.FC<XFeedLiveSectionProps> = ({ speed = 350 }) => {
         )}
         {tab === "btcSd" && (
           <div className="flex flex-col items-center w-full justify-center mb-8">
-            <div className="bg-white rounded-2xl shadow py-6 flex flex-col items-center max-w-2xl w-full">
+            <div
+              className="bg-white rounded-2xl shadow py-6 flex flex-col items-center w-full"
+              style={{ maxWidth: '600px' }}
+            >
               <div className="flex items-center gap-2 md:gap-4 mb-4">
                 <span className="text-[#26A107] font-medium text-xs md:text-base flex items-center gap-1">
-                  <Image
-                    src="/images/bullish.png"
-                    alt="Bullish"
-                    width={20}
-                    height={20}
-                  />
+                  <Image src="/images/bullish.png" alt="Bullish" width={20} height={20} />
                   Bullish
                 </span>
                 <span className="text-[#D00F0F] font-medium text-xs md:text-base flex items-center gap-1">
-                  <Image
-                    src="/images/bearish.png"
-                    alt="Bearish"
-                    width={20}
-                    height={20}
-                  />
+                  <Image src="/images/bearish.png" alt="Bearish" width={20} height={20} />
                   Bearish
                 </span>
                 <div className="flex gap-2 ml-4">

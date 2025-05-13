@@ -8,6 +8,14 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'pbs.twimg.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'p16-common-sg.tiktokcdn-us.com', // For TikTok avatars
+      },
+      {
+        protocol: 'https',
+        hostname: 'yt3.ggpht.com', // For TikTok avatars
+      },
     ],
   },
 };

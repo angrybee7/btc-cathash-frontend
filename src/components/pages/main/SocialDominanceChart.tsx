@@ -158,9 +158,10 @@ const SocialDominanceChart: React.FC<SocialDominanceChartProps> = ({ interval })
         labels: {
           color: '#333',
           font: { size: 14 },
+          
           generateLabels: () => [
             {
-              text: `Trend: ${trend} (Bullish > 0%, Bearish ≤ 0%)`,
+              text: `Trend: ${trend} (Bullish > -3%, Bearish ≤ -3%)`,
               fillStyle: trend === 'bullish' ? 'green' : 'red',
               strokeStyle: trend === 'bullish' ? 'green' : 'red',
               lineWidth: 2,
