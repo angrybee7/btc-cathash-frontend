@@ -31,7 +31,7 @@ body {
 }
 
 .marquee-slider:hover .b-slider__ref {
-  filter: grayscale(100%) contrast(0%) blur(1px);
+  filter: grayscale(100%) contrast(0%) ;
   transition: filter 0.3s ease;
 }
 
