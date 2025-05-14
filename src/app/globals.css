@@ -23,3 +23,34 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* styles/globals.css */
+
+.marquee-slider {
+  outline: none;
+}
+
+.marquee-slider:hover .b-slider__ref {
+  filter: grayscale(100%) contrast(0%) blur(1px);
+  transition: filter 0.3s ease;
+}
+
+.b-slider__ref:hover {
+  filter: none !important;
+}
+
+@media screen and (max-width: 767px) {
+  .b-slider__slide {
+    width: 220px !important; /* Adjusted for mobile */
+  }
+}
+
+@media screen and (max-width: 556px) {
+  .b-slider__slide {
+    width: 180px !important; /* Further adjusted for smaller screens */
+  }
+}
+
+.flickity-viewport {
+  width: 100%;
+}
