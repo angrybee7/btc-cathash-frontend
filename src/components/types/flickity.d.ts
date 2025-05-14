@@ -8,7 +8,7 @@ declare module "flickity" {
     pageDots?: boolean;
     percentPosition?: boolean;
     setGallerySize?: boolean;
-    [key: string]: any; // Allow additional options
+    [key: string]: any;
   }
 
   class Flickity {
@@ -17,8 +17,7 @@ declare module "flickity" {
     settle(x: number): void;
     destroy(): void;
     next(): void;
-    // Add other public methods as needed
   }
 
-  export = Flickity; // Export as default
+  export = Flickity;
 }

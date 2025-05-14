@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'p19-common-sg.tiktokcdn-us.com', // For TikTok avatars
       },
+      {
+        protocol: 'https',
+        hostname: 'p16-common-va.tiktokcdn-us.com', // For TikTok avatars
+      },
 
 
 

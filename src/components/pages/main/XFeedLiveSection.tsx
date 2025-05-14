@@ -1,11 +1,15 @@
+// src/components/pages/main/XFeedLiveSection.tsx
+
 "use client";
 
 import Image from "next/image";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import SocialDominanceChart from "./SocialDominanceChart";
-import Flickity from "flickity";
-import "flickity/css/flickity.css";
+import dynamic from "next/dynamic";
+
+// Dynamically import TweetSlider with SSR disabled
+const TweetSlider = dynamic(() => import("./TweetSlider"), { ssr: false });
 
 interface LunarCrushPost {
   creator_avatar: string;
@@ -25,10 +29,6 @@ const XFeedLiveSection = () => {
   const [btcData, setBtcData] = useState<LunarCrushPost[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
-  const sliderRef = useRef<HTMLDivElement>(null);
-  const flktyRef = useRef<Flickity | null>(null);
-  const requestIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     const fetchBtcData = async () => {
@@ -51,59 +51,6 @@ const XFeedLiveSection = () => {
     const interval = setInterval(fetchBtcData, 60000);
     return () => clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (sliderRef.current && btcData.length > 0 && tab === "tweets") {
-      // Initialize Flickity
-      flktyRef.current = new Flickity(sliderRef.current, {
-        accessibility: true,
-        resize: true,
-        wrapAround: true,
-        prevNextButtons: false,
-        pageDots: false,
-        percentPosition: true,
-        setGallerySize: true,
-      });
-
-      // Set initial position
-      flktyRef.current.x = 0;
-
-      // Start marquee animation
-      const play = () => {
-        if (flktyRef.current) {
-          flktyRef.current.x -= 1.5; // Adjust speed as needed
-          flktyRef.current.settle(flktyRef.current.x);
-          requestIdRef.current = window.requestAnimationFrame(play);
-        }
-      };
-
-      // Pause animation
-      const pause = () => {
-        if (requestIdRef.current) {
-          window.cancelAnimationFrame(requestIdRef.current);
-          requestIdRef.current = null;
-        }
-      };
-
-      // Start playing
-      play();
-
-      // Add event listeners for pause/resume
-      const slider = sliderRef.current;
-      slider.addEventListener("mouseenter", pause);
-      slider.addEventListener("mouseleave", play);
-
-      // Cleanup on unmount or tab change
-      return () => {
-        pause();
-        slider.removeEventListener("mouseenter", pause);
-        slider.removeEventListener("mouseleave", play);
-        if (flktyRef.current) {
-          flktyRef.current.destroy();
-        }
-      };
-    }
-  }, [btcData, tab]);
 
   return (
     <section className="flex justify-center px-2 py-12" id="xFeed">
@@ -158,7 +105,7 @@ const XFeedLiveSection = () => {
         <div className="flex gap-6 mb-6 border-b border-gray-200 w-full max-w-lg justify-center">
           <button
             onClick={() => setTab("tweets")}
-            className={`flex items-center gap-2  font-semibold pb-2 transition border-b-2 cursor-pointer ${
+            className={`flex items-center gap-2 font-semibold pb-2 transition border-b-2 cursor-pointer ${
               tab === "tweets"
                 ? "text-orange-500 border-orange-400"
                 : "text-gray-500 border-transparent hover:text-orange-400"
@@ -222,7 +169,7 @@ const XFeedLiveSection = () => {
         </div>
         {/* Tab Content */}
         {tab === "tweets" && (
-          <div className="w-full mb-8 overflow-x-hidden">
+          <div className="w-full mb-8 overflow-x-hidden ">
             {loading ? (
               <p className="text-center text-gray-500">Loading tweets...</p>
             ) : error ? (
@@ -230,59 +177,7 @@ const XFeedLiveSection = () => {
             ) : btcData.length === 0 ? (
               <p className="text-center text-gray-500">No tweets available</p>
             ) : (
-              <div ref={sliderRef} className="marquee-slider flex ">
-                {btcData.map((tweet, idx) => (
-                  <div
-                    key={idx}
-                    className="b-slider__slide min-w-[280px] max-w-xs h-48 flex items-center justify-center mx-2"
-                  >
-                    <div className="bg-[#181C23] text-white rounded-xl shadow-md p-4 w-full h-full flex flex-col justify-between hover:filter-none transition-all duration-300">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Image
-                          src={tweet.creator_avatar}
-                          alt={`${tweet.creator_display_name} avatar`}
-                          width={32}
-                          height={32}
-                          className="rounded-full"
-                        />
-                        <div>
-                          <div className="text-xs font-bold">
-                            {tweet.creator_display_name}
-                          </div>
-                          <div className="text-xs text-gray-400">
-                            {tweet.creator_name}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-sm mb-4 line-clamp-3">
-                        {tweet.post_title}
-                      </div>
-                      <div className="flex justify-between gap-4 text-xs text-gray-400">
-                        <span>followers: {tweet.creator_followers}</span>
-                        <a
-                          href={tweet.post_link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className=""
-                          onClick={(e) => {
-                            e.preventDefault();
-                            window.open(
-                              tweet.post_link,
-                              "_blank",
-                              "noopener,noreferrer"
-                            );
-                          }}
-                        >
-                          {" "}
-                          <span className="text-yellow-600">
-                            more detail...
-                          </span>{" "}
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <TweetSlider btcData={btcData} />
             )}
           </div>
         )}
@@ -311,7 +206,7 @@ const XFeedLiveSection = () => {
                   height={26}
                   className=""
                 />
-                <div className="font-bold text-[#E95F_quick 00] text-[26px] mb-2">
+                <div className="font-bold text-[#E95F00] text-[26px] mb-2">
                   Coming Soon
                 </div>
                 <div className="text-[15px] mb-4">
